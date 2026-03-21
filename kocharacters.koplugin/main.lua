@@ -1565,7 +1565,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Edit character
 -- ---------------------------------------------------------------------------
-function KoCharacters:onEditCharacter(book_id, char)
+function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn)
     local self_ref   = self
     -- Track the name used to look up the record (changes if the user renames)
     local lookup_name = char.name
@@ -1573,42 +1573,48 @@ function KoCharacters:onEditCharacter(book_id, char)
     local function save()
         self_ref.db:updateCharacter(book_id, lookup_name, char)
         lookup_name = char.name   -- keep in sync if name was changed
-        self_ref:showMsg("Saved.", 2)
     end
 
-    local function editTextField(label, current, multiline, on_save)
-        local dialog
-        dialog = InputDialog:new{
-            title         = "Edit " .. label,
-            input         = current or "",
-            input_type    = multiline and "text" or "string",
-            allow_newline = multiline,
-            buttons       = {{
-                { text = "Cancel", callback = function() UIManager:close(dialog) end },
-                {
-                    text             = "Save",
-                    is_enter_default = not multiline,
-                    callback         = function()
-                        UIManager:close(dialog)
-                        on_save(dialog:getInputText() or "")
-                    end,
-                },
-            }},
-        }
-        UIManager:show(dialog)
-        dialog:onShowKeyboard()
-    end
-
+    local edit_menu  -- forward reference so callbacks can close+reopen it
     local function showEditMenu()
         local ok, Menu = pcall(require, "ui/widget/menu")
         if not ok or not Menu then return end
+
+        local function after_save()
+            UIManager:close(edit_menu)
+            if refresh_browser_fn then refresh_browser_fn() end
+            showEditMenu()
+        end
+
+        local function editTextField(label, current, multiline, on_save)
+            local dialog
+            dialog = InputDialog:new{
+                title         = "Edit " .. label,
+                input         = current or "",
+                input_type    = multiline and "text" or "string",
+                allow_newline = multiline,
+                buttons       = {{
+                    { text = "Cancel", callback = function() UIManager:close(dialog) end },
+                    {
+                        text             = "Save",
+                        is_enter_default = not multiline,
+                        callback         = function()
+                            UIManager:close(dialog)
+                            on_save(dialog:getInputText() or "")
+                        end,
+                    },
+                }},
+            }
+            UIManager:show(dialog)
+            dialog:onShowKeyboard()
+        end
 
         local items = {
             {
                 text     = "Name: " .. (char.name or ""),
                 callback = function()
                     editTextField("Name", char.name, false, function(val)
-                        if val ~= "" then char.name = val; save() end
+                        if val ~= "" then char.name = val; save(); after_save() end
                     end)
                 end,
             },
@@ -1621,13 +1627,14 @@ function KoCharacters:onEditCharacter(book_id, char)
                             local s = a:match("^%s*(.-)%s*$")
                             if s ~= "" then table.insert(t, s) end
                         end
-                        char.aliases = t; save()
+                        char.aliases = t; save(); after_save()
                     end)
                 end,
             },
             {
                 text     = "Role: " .. (char.role or "unknown"),
                 callback = function()
+                    local role_menu
                     local role_items = {}
                     for _, r in ipairs({"protagonist","antagonist","supporting","unknown"}) do
                         local role = r
@@ -1635,22 +1642,25 @@ function KoCharacters:onEditCharacter(book_id, char)
                             text     = role,
                             callback = function()
                                 char.role = role; save()
+                                UIManager:close(role_menu)
+                                after_save()
                             end,
                         })
                     end
-                    UIManager:show(Menu:new{
+                    role_menu = Menu:new{
                         title      = "Select Role",
                         item_table = role_items,
                         width      = Screen:getWidth(),
                         show_parent = self_ref.ui,
-                    })
+                    }
+                    UIManager:show(role_menu)
                 end,
             },
             {
                 text     = "Occupation",
                 callback = function()
                     editTextField("Occupation", char.occupation, false, function(val)
-                        char.occupation = val ~= "" and val or nil; save()
+                        char.occupation = val ~= "" and val or nil; save(); after_save()
                     end)
                 end,
             },
@@ -1658,7 +1668,7 @@ function KoCharacters:onEditCharacter(book_id, char)
                 text     = "Appearance",
                 callback = function()
                     editTextField("Appearance", char.physical_description, true, function(val)
-                        char.physical_description = val; save()
+                        char.physical_description = val; save(); after_save()
                     end)
                 end,
             },
@@ -1666,7 +1676,7 @@ function KoCharacters:onEditCharacter(book_id, char)
                 text     = "Personality",
                 callback = function()
                     editTextField("Personality", char.personality, true, function(val)
-                        char.personality = val; save()
+                        char.personality = val; save(); after_save()
                     end)
                 end,
             },
@@ -1679,7 +1689,7 @@ function KoCharacters:onEditCharacter(book_id, char)
                             local s = r:match("^%s*(.-)%s*$")
                             if s ~= "" then table.insert(t, s) end
                         end
-                        char.relationships = t; save()
+                        char.relationships = t; save(); after_save()
                     end)
                 end,
             },
@@ -1687,7 +1697,7 @@ function KoCharacters:onEditCharacter(book_id, char)
                 text     = "First appearance quote",
                 callback = function()
                     editTextField("First Appearance Quote", char.first_appearance_quote, true, function(val)
-                        char.first_appearance_quote = val; save()
+                        char.first_appearance_quote = val; save(); after_save()
                     end)
                 end,
             },
@@ -1695,18 +1705,19 @@ function KoCharacters:onEditCharacter(book_id, char)
                 text     = "Notes" .. ((char.user_notes and char.user_notes ~= "") and " ✎" or ""),
                 callback = function()
                     editTextField("Notes", char.user_notes, true, function(val)
-                        char.user_notes = val ~= "" and val or nil; save()
+                        char.user_notes = val ~= "" and val or nil; save(); after_save()
                     end)
                 end,
             },
         }
 
-        UIManager:show(Menu:new{
+        edit_menu = Menu:new{
             title       = "Edit: " .. (char.name or ""),
             item_table  = items,
             width       = Screen:getWidth(),
             show_parent = self_ref.ui,
-        })
+        }
+        UIManager:show(edit_menu)
     end
 
     showEditMenu()
@@ -2130,7 +2141,7 @@ function KoCharacters:doChapterScan(book_id, start_page, end_page)
     processBatch(start_page)
 end
 
-function KoCharacters:showCharacterViewer(book_id, char, sort_mode, query)
+function KoCharacters:showCharacterViewer(book_id, char, sort_mode, query, refresh_browser_fn)
     local self_ref = self
     local name     = char.name or "Unknown"
 
@@ -2183,13 +2194,13 @@ function KoCharacters:showCharacterViewer(book_id, char, sort_mode, query)
             {
                 { text = "Re-analyze", callback = function() close_fn(); self_ref:onReanalyzeCharacter(book_id, char) end },
                 { text = "Clean up",   callback = function() close_fn(); self_ref:onCleanCharacter(book_id, char.name) end },
-                { text = "Edit",       callback = function() close_fn(); self_ref:onEditCharacter(book_id, char) end },
+                { text = "Edit",       callback = function() close_fn(); self_ref:onEditCharacter(book_id, char, refresh_browser_fn) end },
             },
             {
                 { text = "Gen. portrait", callback = function()
                     close_fn()
                     self_ref:onGeneratePortrait(book_id, char)
-                    self_ref:showCharacterViewer(book_id, char, sort_mode, query)
+                    self_ref:showCharacterViewer(book_id, char, sort_mode, query, refresh_browser_fn)
                 end },
                 { text = "Merge into...", callback = do_merge },
                 { text = "Delete",        callback = do_delete },
@@ -2426,19 +2437,25 @@ function KoCharacters:showCharacterBrowser(book_id, sort_mode, query)
                     char.unlocked = true
                     self_ref.db:updateCharacter(book_id, char.name, char)
                 end
-                self_ref:showCharacterViewer(book_id, char, sort_mode, query)
+                self_ref:showCharacterViewer(book_id, char, sort_mode, query, refresh_browser)
             end,
         })
         end  -- else (not spoiler)
     end
 
     local count_str = query ~= "" and (#filtered .. "/" .. #all_chars) or tostring(#all_chars)
-    UIManager:show(Menu:new{
+    local browser_menu
+    local function refresh_browser()
+        UIManager:close(browser_menu)
+        self_ref:showCharacterBrowser(book_id, sort_mode, query)
+    end
+    browser_menu = Menu:new{
         title       = count_str .. " character(s) — " .. self:getBookTitle(),
         item_table  = items,
         width       = Screen:getWidth(),
         show_parent = self.ui,
-    })
+    }
+    UIManager:show(browser_menu)
 end
 
 -- Return a safe filename component for a character name
@@ -3404,7 +3421,8 @@ function KoCharacters:onOpenSettings()
                                 callback = function()
                                     G_reader_settings:saveSetting("kocharacters_imagen_model", model)
                                     UIManager:close(model_menu)
-                                    self_ref:showMsg("Imagen model set to:\n" .. model, 3)
+                                    UIManager:close(ai_menu)
+                                    openAISettings()
                                 end,
                             })
                         end
