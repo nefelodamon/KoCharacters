@@ -1565,7 +1565,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Edit character
 -- ---------------------------------------------------------------------------
-function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn)
+function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn, show_viewer_fn)
     local self_ref   = self
     -- Track the name used to look up the record (changes if the user renames)
     local lookup_name = char.name
@@ -1717,6 +1717,10 @@ function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn)
             width       = Screen:getWidth(),
             show_parent = self_ref.ui,
         }
+        edit_menu.onReturn = function()
+            UIManager:close(edit_menu)
+            if show_viewer_fn then show_viewer_fn() end
+        end
         UIManager:show(edit_menu)
     end
 
@@ -2194,7 +2198,13 @@ function KoCharacters:showCharacterViewer(book_id, char, sort_mode, query, refre
             {
                 { text = "Re-analyze", callback = function() close_fn(); self_ref:onReanalyzeCharacter(book_id, char) end },
                 { text = "Clean up",   callback = function() close_fn(); self_ref:onCleanCharacter(book_id, char.name) end },
-                { text = "Edit",       callback = function() close_fn(); self_ref:onEditCharacter(book_id, char, refresh_browser_fn) end },
+                { text = "Edit",       callback = function()
+                    close_fn()
+                    local function show_viewer_fn()
+                        self_ref:showCharacterViewer(book_id, char, sort_mode, query, refresh_browser_fn)
+                    end
+                    self_ref:onEditCharacter(book_id, char, refresh_browser_fn, show_viewer_fn)
+                end },
             },
             {
                 { text = "Gen. portrait", callback = function()
