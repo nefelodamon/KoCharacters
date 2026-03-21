@@ -58,6 +58,10 @@ All use Levenshtein distance (≤1 for names ≤6 chars, ≤2 for longer) plus s
 
 **Rate limiting** — Chapter scan processes pages in batches of 4, sleeping 3 seconds between API calls (`os.execute("sleep 3")`). Combined with ~1-2s API latency this stays under 15 RPM.
 
+## Release process
+
+**Always bump the version in `kocharacters.koplugin/_meta.lua` before committing and pushing.** Use patch increments (e.g. 1.3.23 → 1.3.24). Include the version bump in the same commit as the change.
+
 ## KOReader Lua constraints
 
 - Use `Menu` (not `TouchMenu`) for flat item lists — `TouchMenu` expects a tabbed `tab_item_table` structure.
