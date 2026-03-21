@@ -3481,7 +3481,8 @@ function KoCharacters:onOpenSettings()
         UIManager:show(ai_menu)
     end
 
-    UIManager:show(Menu:new{
+    local settings_menu
+    settings_menu = Menu:new{
         title      = "KoCharacters Settings",
         item_table = {
             {
@@ -3489,17 +3490,22 @@ function KoCharacters:onOpenSettings()
                 callback = function() openAISettings() end,
             },
             {
-                text = "Auto-extract on page turn: "
-                    .. (G_reader_settings:readSetting("kocharacters_auto_extract") and "ON" or "OFF"),
+                text_func = function()
+                    return "Auto-extract on page turn: "
+                        .. (G_reader_settings:readSetting("kocharacters_auto_extract") and "ON" or "OFF")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_auto_extract")
                     G_reader_settings:saveSetting("kocharacters_auto_extract", not on)
-                    self:showMsg("Auto-extract: " .. (not on and "ON" or "OFF"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
-                text = "Auto-extract delay: "
-                    .. (G_reader_settings:readSetting("kocharacters_auto_extract_delay") or 10) .. "s",
+                text_func = function()
+                    return "Auto-extract delay: "
+                        .. (G_reader_settings:readSetting("kocharacters_auto_extract_delay") or 10) .. "s"
+                end,
                 callback = function()
                     local dialog
                     dialog = InputDialog:new{
@@ -3516,7 +3522,8 @@ function KoCharacters:onOpenSettings()
                                     UIManager:close(dialog)
                                     if val and val > 0 then
                                         G_reader_settings:saveSetting("kocharacters_auto_extract_delay", val)
-                                        self:showMsg("Auto-extract delay set to " .. val .. "s", 2)
+                                        UIManager:close(settings_menu)
+                                        self_ref:onOpenSettings()
                                     end
                                 end,
                             },
@@ -3527,8 +3534,10 @@ function KoCharacters:onOpenSettings()
                 end,
             },
             {
-                text = "Cleanup batch size: "
-                    .. (G_reader_settings:readSetting("kocharacters_cleanup_batch_size") or 5),
+                text_func = function()
+                    return "Cleanup batch size: "
+                        .. (G_reader_settings:readSetting("kocharacters_cleanup_batch_size") or 5)
+                end,
                 callback = function()
                     local dialog
                     dialog = InputDialog:new{
@@ -3545,7 +3554,8 @@ function KoCharacters:onOpenSettings()
                                     UIManager:close(dialog)
                                     if val and val >= 1 then
                                         G_reader_settings:saveSetting("kocharacters_cleanup_batch_size", math.floor(val))
-                                        self:showMsg("Cleanup batch size set to " .. math.floor(val), 2)
+                                        UIManager:close(settings_menu)
+                                        self_ref:onOpenSettings()
                                     end
                                 end,
                             },
@@ -3556,48 +3566,63 @@ function KoCharacters:onOpenSettings()
                 end,
             },
             {
-                text = "Detect duplicates after cleanup: "
-                    .. (G_reader_settings:readSetting("kocharacters_detect_dupes_after_cleanup") and "ON" or "OFF"),
+                text_func = function()
+                    return "Detect duplicates after cleanup: "
+                        .. (G_reader_settings:readSetting("kocharacters_detect_dupes_after_cleanup") and "ON" or "OFF")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_detect_dupes_after_cleanup")
                     G_reader_settings:saveSetting("kocharacters_detect_dupes_after_cleanup", not on)
-                    self:showMsg("Detect duplicates after cleanup: " .. (not on and "ON" or "OFF"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
-                text = "Scan indicator icon: "
-                    .. (G_reader_settings:readSetting("kocharacters_scan_indicator") ~= false and "ON" or "OFF"),
+                text_func = function()
+                    return "Scan indicator icon: "
+                        .. (G_reader_settings:readSetting("kocharacters_scan_indicator") ~= false and "ON" or "OFF")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_scan_indicator") ~= false
                     G_reader_settings:saveSetting("kocharacters_scan_indicator", not on)
-                    self:showMsg("Scan indicator: " .. (not on and "ON" or "OFF"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
-                text = "Auto-accept enrichments: "
-                    .. (G_reader_settings:readSetting("kocharacters_auto_enrich") and "ON" or "OFF"),
+                text_func = function()
+                    return "Auto-accept enrichments: "
+                        .. (G_reader_settings:readSetting("kocharacters_auto_enrich") and "ON" or "OFF")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_auto_enrich")
                     G_reader_settings:saveSetting("kocharacters_auto_enrich", not on)
-                    self:showMsg("Auto-accept enrichments: " .. (not on and "ON" or "OFF"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
-                text = "Spoiler protection: "
-                    .. (G_reader_settings:readSetting("kocharacters_spoiler_protection") and "ON" or "OFF"),
+                text_func = function()
+                    return "Spoiler protection: "
+                        .. (G_reader_settings:readSetting("kocharacters_spoiler_protection") and "ON" or "OFF")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_spoiler_protection")
                     G_reader_settings:saveSetting("kocharacters_spoiler_protection", not on)
-                    self:showMsg("Spoiler protection: " .. (not on and "ON" or "OFF"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
-                text = "Character detail view: "
-                    .. (G_reader_settings:readSetting("kocharacters_html_viewer") and "HTML (with portrait)" or "Text"),
+                text_func = function()
+                    return "Character detail view: "
+                        .. (G_reader_settings:readSetting("kocharacters_html_viewer") and "HTML (with portrait)" or "Text")
+                end,
                 callback = function()
                     local on = G_reader_settings:readSetting("kocharacters_html_viewer")
                     G_reader_settings:saveSetting("kocharacters_html_viewer", not on)
-                    self:showMsg("Character view: " .. (not on and "HTML (with portrait)" or "Text"), 2)
+                    UIManager:close(settings_menu)
+                    self_ref:onOpenSettings()
                 end,
             },
             {
@@ -3703,7 +3728,8 @@ function KoCharacters:onOpenSettings()
         },
         width       = Screen:getWidth(),
         show_parent = self.ui,
-    })
+    }
+    UIManager:show(settings_menu)
 end
 
 function KoCharacters:onSetExtractionApiKey()
