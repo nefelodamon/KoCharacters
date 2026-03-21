@@ -2241,7 +2241,10 @@ function KoCharacters:showCharacterViewer(book_id, char, sort_mode, query, refre
             end
 
             local rows = make_buttons(close_fn)
-            table.insert(rows[#rows], { text = "Close", callback = close_fn })
+            table.insert(rows[#rows], { text = "Close", callback = function()
+                close_fn()
+                if refresh_browser_fn then refresh_browser_fn() end
+            end })
 
             local btable   = ButtonTable:new{ width = inner_w, buttons = rows }
             local btable_h = btable:getSize().h
