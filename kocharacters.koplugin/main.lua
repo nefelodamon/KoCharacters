@@ -1712,10 +1712,13 @@ function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn, show_vi
         }
 
         edit_menu = Menu:new{
-            title       = "Edit: " .. (char.name or ""),
-            item_table  = items,
-            width       = Screen:getWidth(),
-            show_parent = self_ref.ui,
+            title          = "Edit: " .. (char.name or ""),
+            item_table     = items,
+            width          = Screen:getWidth(),
+            show_parent    = self_ref.ui,
+            close_callback = function()
+                if show_viewer_fn then show_viewer_fn() end
+            end,
         }
         edit_menu.onReturn = function()
             UIManager:close(edit_menu)
@@ -3744,9 +3747,10 @@ function KoCharacters:onOpenSettings()
             {
                 text     = "About",
                 callback = function()
+                    local meta = require("_meta")
                     UIManager:show(TextViewer:new{
                         title = "About KoCharacters",
-                        text  = "KoCharacters\n\n"
+                        text  = "KoCharacters v" .. (meta.version or "?") .. "\n\n"
                              .. "Automatically extract, track, and enrich character profiles from your books using Google Gemini AI. "
                              .. "Generate portraits with Google Imagen. Runs on KOReader on Kindle and other supported devices.\n\n"
                              .. "\xC2\xA9 2026\nNefelodamon\n\n"
