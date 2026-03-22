@@ -1575,13 +1575,16 @@ function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn, show_vi
         lookup_name = char.name   -- keep in sync if name was changed
     end
 
-    local edit_menu  -- forward reference so callbacks can close+reopen it
+    local edit_menu          -- forward reference so callbacks can close+reopen it
+    local closing_for_save = false  -- guard: suppress close_callback during after_save
     local function showEditMenu()
         local ok, Menu = pcall(require, "ui/widget/menu")
         if not ok or not Menu then return end
 
         local function after_save()
+            closing_for_save = true
             UIManager:close(edit_menu)
+            closing_for_save = false
             if refresh_browser_fn then refresh_browser_fn() end
             showEditMenu()
         end
@@ -1717,12 +1720,11 @@ function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn, show_vi
             width          = Screen:getWidth(),
             show_parent    = self_ref.ui,
             close_callback = function()
-                if show_viewer_fn then show_viewer_fn() end
+                if not closing_for_save and show_viewer_fn then show_viewer_fn() end
             end,
         }
         edit_menu.onReturn = function()
-            UIManager:close(edit_menu)
-            if show_viewer_fn then show_viewer_fn() end
+            UIManager:close(edit_menu)  -- close_callback handles show_viewer_fn
         end
         UIManager:show(edit_menu)
     end
