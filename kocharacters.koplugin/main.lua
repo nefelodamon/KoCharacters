@@ -2427,6 +2427,14 @@ function KoCharacters:showCharacterBrowser(book_id, sort_mode, query)
         end,
     })
 
+    -- Forward-declare browser_menu and refresh_browser BEFORE the loop so the
+    -- callbacks inside the loop capture them as upvalues (not nil globals).
+    local browser_menu
+    local function refresh_browser()
+        UIManager:close(browser_menu)
+        self_ref:showCharacterBrowser(book_id, sort_mode, query)
+    end
+
     -- Character items
     for _, c in ipairs(sorted) do
         local name    = c.name or "Unknown"
@@ -2471,11 +2479,6 @@ function KoCharacters:showCharacterBrowser(book_id, sort_mode, query)
     end
 
     local count_str = query ~= "" and (#filtered .. "/" .. #all_chars) or tostring(#all_chars)
-    local browser_menu
-    local function refresh_browser()
-        UIManager:close(browser_menu)
-        self_ref:showCharacterBrowser(book_id, sort_mode, query)
-    end
     browser_menu = Menu:new{
         title       = count_str .. " character(s) — " .. self:getBookTitle(),
         item_table  = items,
