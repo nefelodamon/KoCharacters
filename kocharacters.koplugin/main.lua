@@ -1715,16 +1715,25 @@ function KoCharacters:onEditCharacter(book_id, char, refresh_browser_fn, show_vi
         }
 
         edit_menu = Menu:new{
-            title          = "Edit: " .. (char.name or ""),
-            item_table     = items,
-            width          = Screen:getWidth(),
-            show_parent    = self_ref.ui,
-            close_callback = function()
-                if not closing_for_save and show_viewer_fn then show_viewer_fn() end
-            end,
+            title       = "Edit: " .. (char.name or ""),
+            item_table  = items,
+            width       = Screen:getWidth(),
+            show_parent = self_ref.ui,
         }
+        -- onClose fires only for the physical back key (not when an InputDialog
+        -- takes focus), so it is safe to navigate back to the viewer here.
+        edit_menu.onClose = function()
+            if not closing_for_save and show_viewer_fn then
+                UIManager:close(edit_menu)
+                show_viewer_fn()
+            else
+                UIManager:close(edit_menu)
+            end
+            return true
+        end
         edit_menu.onReturn = function()
-            UIManager:close(edit_menu)  -- close_callback handles show_viewer_fn
+            UIManager:close(edit_menu)
+            if show_viewer_fn then show_viewer_fn() end
         end
         UIManager:show(edit_menu)
     end
